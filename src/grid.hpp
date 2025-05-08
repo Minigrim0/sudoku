@@ -9,7 +9,7 @@ class Grid {
         /**
          * Generates a grid
          */
-        bool generate();
+        void generate();
 
         /**
          * Solves the grid using WFC
@@ -20,6 +20,8 @@ class Grid {
          * Displays the grid in the terminal
          */
         void display();
+
+        void reset();
 
     private:
         bool solved();

@@ -5,28 +5,65 @@
 
 Grid::Grid(): Grid(false) {}
 
-Grid::Grid(bool generate) {
-    if (generate) {
-        this->generate();
+Grid::Grid(bool gen_grid) {
+    if (gen_grid) {
+        generate();
     } else {
-        for (int x = 0; x < 9; x++) {
-            for (int y = 0; y < 9; y++) {
-                _cells[x][y].fill(0);  // Zero means empty cell
-            }
+        reset();
+    }
+}
+
+void Grid::reset() {
+    for (int x = 0; x < 9; x++) {
+        for (int y = 0; y < 9; y++) {
+            _cells[x][y].fill(0);  // Zero means empty cell
         }
     }
 }
 
-bool Grid::generate() {
-    std::cout << "Grid generation is not implemented yet" << std::endl;
+void Grid::generate() {
     // Solve an empty puzzle then remove one random element at a time
     // until just before the puzzle becomes unsolvable or has
     // multiple solutions
-    return false;
+    reset();
+    solve();
+
+    bool can_be_solved = true;
+    int amount_removed = 0;
+    while (can_be_solved) {
+        // Take random cell
+        int index = std::rand() % 81;
+        int x = index / 9;
+        int y = index % 9;
+        while (_cells[x][y].get_value() == 0) {
+            index = std::rand() % 81;
+            x = index / 9;
+            y = index % 9;
+        }
+
+        Cell cell_copy[9][9];
+        for (int i = 0; i < 9; i++) {
+            std::copy(std::begin(_cells[i]), std::end(_cells[i]), std::begin(cell_copy[i]));
+        }
+
+        _cells[x][y].fill(0);
+        amount_removed += 1;
+        bool solvable = solve();
+
+        for (int i = 0; i < 9; i++) {
+            std::copy(std::begin(cell_copy[i]), std::end(cell_copy[i]), std::begin(_cells[i]));
+        }
+
+        if (!solvable) {
+            can_be_solved = false;
+        } else {
+            _cells[x][y].fill(0);
+        }
+    }
 }
 
 bool Grid::solve() {
-    std::cout << "Starting solver" << std::endl;
+    bool took_a_random_path = false;
 
     while (!solved()) {
         // Update cells weights
@@ -77,10 +114,14 @@ bool Grid::solve() {
             }
         }
 
+        if (highest_probability <= 1.0 - 10e-6) {
+            took_a_random_path = true;
+        }
+
         // Collapse the cell
         _cells[highest_probability_coord[0]][highest_probability_coord[1]].collapse();
     }
-    return false;
+    return !took_a_random_path;
 }
 
 bool Grid::solved() {
@@ -95,18 +136,36 @@ bool Grid::solved() {
 }
 
 void Grid::display() {
-    std::cout << "  ";
-    for (int x = 0; x < 9; x++) std::cout << static_cast<char>(65 + x) << " ";
+    std::cout << " |";
+    for (int x = 0; x < 9; x++) {
+        std::cout << static_cast<char>(65 + x);
+        if ((x + 1) % 3 == 0) {
+            std::cout << "|";
+        } else {
+            std::cout << "_";
+        }
+    }
     std::cout << std::endl;
 
     for (int y = 0; y < 9; y ++) {
-        std::cout << y + 1 << " ";
+        std::cout << y + 1 << "|";
         for (int x = 0; x < 9; x ++) {
             uint8_t value = _cells[x][y].get_value();
             if (value == 0) {
-                std::cout << "_ ";
+                std::cout << " ";
             } else {
-                std::cout << static_cast<int>(value) << " ";
+                std::cout << static_cast<int>(value);
+            }
+
+            if ((x + 1) % 3 == 0) {
+                std::cout << "|";
+            } else {
+                if ((y + 1) % 3 == 0)
+                {
+                    std::cout << "_";
+                } else {
+                    std::cout << " ";
+                }
             }
         }
         std::cout << std::endl;
